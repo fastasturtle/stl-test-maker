@@ -45,7 +45,7 @@ fun useForTesting(f: File): Boolean {
 
     return f.readLines().none {
         (it.contains("UNSUPPORTED:") && it.contains("c++14")) ||
-        (it.contains("REQUIRES:") && !it.contains("c++14")) ||
+        ((it.contains("REQUIRES:") || it.contains("REQUIRES-ANY:")) && !it.contains("c++14")) ||
         (it.contains("XFAIL:") && (
                 it.contains("availability") ||
                 it.contains("c++14") ||
