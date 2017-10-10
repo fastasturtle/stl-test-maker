@@ -4,11 +4,13 @@ val sourceCodeExts = listOf("cpp", "h", "cc", "hpp", "c")
 val interestingStarts = listOf("test/libcxx/", "test/std/")
 val uninterestingEnds = listOf(".fail.cpp", "version.pass.cpp", ".sh.cpp", "nothing_to_do.pass.cpp")
 val badParts = listOf("cuchar", "uchar", "coroutine")
+val sizeThreshold = 500
 
 val filesPlaceholder = "__FILES__"
+val projectPlaceholder = "__PROJECT_NAME__"
 val cmakeTemplate = """
 cmake_minimum_required(VERSION 3.8)
-project(llvm__libcxx__git)
+project($projectPlaceholder)
 
 include_directories(include)
 include_directories(fuzzing)
@@ -16,12 +18,12 @@ include_directories(test/support)
 include_directories(test/support/test.support)
 include_directories(test/support/test.workarounds)
 
-add_executable(llvm__libcxx__git
+add_executable($projectPlaceholder
 $filesPlaceholder
 )
 
-target_compile_options(llvm__libcxx__git PUBLIC -std=c++14 -nostdinc++)
-target_compile_definitions(llvm__libcxx__git PUBLIC
+target_compile_options($projectPlaceholder PUBLIC -std=c++14 -nostdinc++)
+target_compile_definitions($projectPlaceholder PUBLIC
     LIBCXX_FILESYSTEM_STATIC_TEST_ROOT="\\"\\""
     LIBCXX_FILESYSTEM_DYNAMIC_TEST_ROOT="\\"\\""
     LIBCXX_FILESYSTEM_DYNAMIC_TEST_HELPER="\\"\\""
@@ -56,14 +58,39 @@ fun useForTesting(f: File): Boolean {
     }
 }
 
-fun writeCMakeFile(folder: File, goodFiles: Sequence<File>) {
-    val text = cmakeTemplate.replace(filesPlaceholder, goodFiles.joinToString("\n", transform = {it.relativeTo(folder).path}))
-    val cmakeFile = File(folder, "CMakeLists.txt")
+fun splitIntoGroups(goodFiles: List<File>, root: File): List<List<File>> {
+    val groups = goodFiles.groupBy { it.relativeTo(root).path.split("/").slice(0..2).joinToString(separator = "/") }
+    val list = mutableListOf<MutableList<File>>()
+    for (group in groups) {
+        val filesInGroup = group.value
+        if (list.isEmpty() || (list.last().isNotEmpty() && list.last().size + filesInGroup.size > sizeThreshold))
+            list.add(mutableListOf())
+        list.last().addAll(filesInGroup)
+    }
+    return list
+}
+
+fun writeCMakeFile(inputFolder: File, outputFolder: File, index: Int, files: List<File>) {
+    val projectName = "libcxxtests$index"
+    val resultFolder = File(outputFolder, projectName)
+    resultFolder.deleteRecursively()
+    resultFolder.mkdirs()
+    inputFolder.copyRecursively(resultFolder)
+    println("Copied ${inputFolder.path} to ${resultFolder.path}")
+    val text = cmakeTemplate
+            .replace(projectPlaceholder, projectName)
+            .replace(filesPlaceholder, files.joinToString("\n", transform = {it.relativeTo(inputFolder).path}))
+    val cmakeFile = File(resultFolder, "CMakeLists.txt")
     cmakeFile.writeText(text)
+    println("Written CMakeLists.txt to ${cmakeFile.path}")
 }
 
 fun main(args: Array<String>) {
     val folder = File(args[0])
-    val goodFiles = folder.walk().filter(::useForTesting)
-    writeCMakeFile(folder, goodFiles)
+    val outputFolder = File(args[1])
+    val goodFiles = folder.walk().filter(::useForTesting).toList()
+    val groups = splitIntoGroups(goodFiles, folder)
+    groups.forEachIndexed( { index, group ->
+        writeCMakeFile(folder, outputFolder, index, group)
+    })
 }
