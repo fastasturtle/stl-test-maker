@@ -3,7 +3,11 @@ import java.io.File
 val sourceCodeExts = listOf("cpp", "h", "cc", "hpp", "c")
 val interestingStarts = listOf("test/libcxx/", "test/std/")
 val uninterestingEnds = listOf(".fail.cpp", "version.pass.cpp", ".sh.cpp", "nothing_to_do.pass.cpp")
-val badParts = listOf("cuchar", "uchar", "coroutine")
+val badParts = listOf(
+        "cuchar", "uchar", // uchar.h is not present in my libc copy
+        "coroutine", // we can't do anything meaningful with it yet
+        "locale.facet/facet.pass.cpp" // hangs in tests (but not in the editor), to investigate
+)
 val sizeThreshold = 500
 
 val filesPlaceholder = "__FILES__"
