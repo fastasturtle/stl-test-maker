@@ -6,7 +6,23 @@ val uninterestingEnds = listOf(".fail.cpp", "version.pass.cpp", ".sh.cpp", "noth
 val badParts = listOf(
         "cuchar", "uchar", // uchar.h is not present in my libc copy
         "coroutine", // we can't do anything meaningful with it yet
-        "locale.facet/facet.pass.cpp" // hangs in tests (but not in the editor), to investigate
+
+        // hangs in tests (but not in the editor), to investigate
+        "locale.facet/facet.pass.cpp",
+        "locale.codecvt.members/utf_sanity_check.pass.cpp",
+        "facet.ctype.special/facet.ctype.char.members/ctor.pass.cpp",
+        "locale.global.templates/use_facet.pass.cpp",
+        "locale.messages.members/not_testable.pass.cpp",
+        "locale.global.templates/has_facet.pass.cpp",
+        "complex.literals/literals.pass.cpp",
+        "complex.literals/literals2.pass.cpp",
+        "complex.literals/literals1.pass.cpp",
+        "re.submatch.op/compare.pass.cpp",
+        "basic.string.literals/literal.pass.cpp",
+        "basic.string.literals/literal1.pass.cpp",
+        "basic.string.literals/literal2.pass.cpp",
+        "basic.string.literals/literal3.pass.cpp",
+        "basic.string/input_iterator.h"
 )
 val sizeThreshold = 500
 
@@ -75,7 +91,7 @@ fun splitIntoGroups(goodFiles: List<File>, root: File): List<List<File>> {
 }
 
 fun writeCMakeFile(inputFolder: File, outputFolder: File, index: Int, files: List<File>) {
-    val projectName = "libcxxtests$index"
+    val projectName = "libcxxtests-$index"
     val resultFolder = File(outputFolder, projectName)
     resultFolder.deleteRecursively()
     resultFolder.mkdirs()
