@@ -90,7 +90,8 @@ fun splitIntoGroups(goodFiles: List<File>, root: File): List<List<File>> {
     return list
 }
 
-fun writeCMakeFile(inputFolder: File, outputFolder: File, index: Int, files: List<File>) {
+// hack: returns zip command
+fun prepareProject(inputFolder: File, outputFolder: File, index: Int, files: List<File>): String {
     val projectName = "libcxxtests-$index"
     val resultFolder = File(outputFolder, projectName)
     resultFolder.deleteRecursively()
@@ -103,6 +104,7 @@ fun writeCMakeFile(inputFolder: File, outputFolder: File, index: Int, files: Lis
     val cmakeFile = File(resultFolder, "CMakeLists.txt")
     cmakeFile.writeText(text)
     println("Written CMakeLists.txt to ${cmakeFile.path}")
+    return "zip $projectName.zip -r $projectName"
 }
 
 fun main(args: Array<String>) {
@@ -110,7 +112,8 @@ fun main(args: Array<String>) {
     val outputFolder = File(args[1])
     val goodFiles = folder.walk().filter(::useForTesting).toList()
     val groups = splitIntoGroups(goodFiles, folder)
-    groups.forEachIndexed( { index, group ->
-        writeCMakeFile(folder, outputFolder, index, group)
+    val zipCommands = groups.mapIndexed({ index, group ->
+        prepareProject(folder, outputFolder, index, group)
     })
+    println(zipCommands.joinToString(" && "))
 }
